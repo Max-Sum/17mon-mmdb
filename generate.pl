@@ -14,6 +14,7 @@ use Data::Dumper;
 my @mm_langs = ("de", "ru", "pt-BR", "ja", "en", "fr", 'zh-CN', "es");
 
 my @mm_continent_codes = (6255146, 6255147, 6255148, 6255149, 6255150, 6255151, 6255152);
+my $mm_current_geoid = 4294967295;
 my %mm_continentid2name_map = (
     6255146 => 'AF',
     6255147 => 'AS',
@@ -299,22 +300,26 @@ sub insert_17mon_ip{
         
 
         my $data = {};
-
-        if ( exists($mm_iso2country_map{$iso_code} ) ) {
-            $geoname_id = $mm_iso2country_map{$iso_code};
-
-            if ( exists($mm_country_map{$geoname_id} ) ) {
-                $data -> {continent} = $mm_continent_map{$mm_country2continent_map{$geoname_id}};
-                $data -> {country} = $mm_country_map{$geoname_id};
-            }
-            #print "$network $iso_code\n";
-            #print Dumper($data);
-            
-            $tree->insert_network(
-                $network,
-                $data,
-            );
+        
+        # Insert Pesudo Country if not exists
+        if ( !exists($mm_iso2country_map{$iso_code}) ) {
+            mm_country_map_insert("$mm_current_geoid,en,NA,North America,$iso_code,0",1);
+            $mm_current_geoid = $mm_current_geoid - 1;
         }
+
+        $geoname_id = $mm_iso2country_map{$iso_code};
+
+        if ( exists($mm_country_map{$geoname_id} ) ) {
+            $data -> {continent} = $mm_continent_map{$mm_country2continent_map{$geoname_id}};
+            $data -> {country} = $mm_country_map{$geoname_id};
+        }
+        #print "$network $iso_code\n";
+        #print Dumper($data);
+
+        $tree->insert_network(
+            $network,
+            $data,
+        );
     }
 }
 
